@@ -1,0 +1,27 @@
+{
+  "name": "lootmart",
+  "author": "Gary Thung",
+  "license": "GPL-3.0-or-later",
+  "version": "1.0.0",
+  "description": "Unbundle your Loot into individual components.",
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "ethers": "^5.4.6",
+    "prettier": "^2.3.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.13"
+  },
+  "scripts": {
+    "lint": "prettier --write src/**/*.sol",
+    "postinstall": "patch-package",
+    "deploy": "npx hardhat run --network localhost scripts/deploy.js",
+    "console": "npx hardhat console --network localhost"
+  },
+  "dependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@openzeppelin/contracts": "^4.3.1",
+    "dotenv": "^10.0.0",
+    "hardhat": "^2.6.4",
+    "patch-package": "^6.4.7"
+  }
+}
