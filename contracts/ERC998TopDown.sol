@@ -123,7 +123,7 @@ contract ERC998TopDown is ERC721, IERC998ERC721TopDown, IERC998ERC1155TopDown {
             "ERC998: caller is not owner nor approved"
         );
 
-        _beforeChild721Transfer(operator, fromTokenId, to, childContract, _asSingletonArray(childTokenId), data);
+        _beforeChild721Transfer(operator, fromTokenId, to, childContract, childTokenId, data);
 
         _removeChild721(fromTokenId, childContract, childTokenId);
 
@@ -299,7 +299,7 @@ contract ERC998TopDown is ERC721, IERC998ERC721TopDown, IERC998ERC1155TopDown {
         uint256 fromTokenId,
         address to,
         address childContract,
-        uint256[] memory ids,
+        uint256 id,
         bytes memory data
     )
         internal virtual

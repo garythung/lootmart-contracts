@@ -168,8 +168,8 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   }
 
   /**
-   * @dev This marks a new item as equipped. This will send back whatever is currently equipped.
-   * It does not handle the transferring the new item in.
+   * @dev This marks a new item as equipped and sends back whatever is currently equipped.
+   * It does not handle the transferring the new item in; that's done by the receiver callback.
    */
   function _equip(uint256 tokenId, address itemAddress, uint256 itemId) internal {
     string memory itemType = ILootMart(itemAddress).itemTypeFor(itemId);
@@ -282,10 +282,10 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
     uint256 fromTokenId,
     address to,
     address childContract,
-    uint256[] memory ids,
+    uint256 id,
     bytes memory data
   ) internal override virtual {
-
+    super._beforeChild721Transfer(operator, fromTokenId, to, childContract, id, data);
   }
 
   function _beforeChild1155Transfer(
@@ -297,7 +297,7 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
       uint256[] memory amounts,
       bytes memory data
   ) internal override virtual {
-
+    super._beforeChild1155Transfer(operator, fromTokenId, to, childContract, ids, amounts, data);
   }
 
   function _beforeTokenTransfer(
