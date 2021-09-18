@@ -5,12 +5,23 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LootTokensMetadata.sol";
+import "./Adventurer.sol";
+import "hardhat/console.sol";
 
 interface ILootAirdrop {
     function claimForLoot(uint256) external payable;
     function safeTransferFrom(address, address, uint256) external payable;
+}
+
+interface IAdventurer {
+    function mintToAccount(address _account) external;
+    function totalSupply() external returns (uint256);
+    function equipBulk(uint256 tokenId, address[] memory itemAddresses, uint256[] memory itemIds) external;
+    function safeTransferFrom(address from, address to, uint256 tokenId) external;
 }
 
 library Errors {
@@ -22,9 +33,11 @@ library Errors {
 /// @author Gary Thung, forked from Georgios Konstantopoulos
 /// @notice Allows "opening" your ERC721 Loot bags and extracting the items inside it
 /// The created tokens are ERC1155 compatible, and their on-chain SVG is their name
-contract LootMart is Ownable, ERC1155, LootTokensMetadata {
+contract LootMart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
     // The OG Loot bags contract
     IERC721Enumerable immutable loot;
+
+    IAdventurer immutable adventurer;
 
     // Track claimed LootMart components
     mapping(uint256 => bool) public claimedByTokenId;
@@ -47,8 +60,15 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata {
     */
     uint256 public tokenIdEnd = 8000;
 
-    constructor(address _loot, string memory _baseURI) ERC1155("") LootTokensMetadata(_baseURI) {
+    constructor(address _loot, address _adventurer, string memory _baseURI) ERC1155("") LootTokensMetadata(_baseURI) {
         loot = IERC721Enumerable(_loot);
+        adventurer = IAdventurer(_adventurer);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
+        return
+            interfaceId == 0xeea73b1a ||
+            super.supportsInterface(interfaceId);
     }
 
     /// @notice Claims the components for the given tokenId
@@ -73,6 +93,31 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata {
     function claimForTokenIds(uint256[] memory tokenIds) external {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _claim(tokenIds[i], _msgSender());
+        }
+    }
+
+    /// @notice Claims the components for the given tokenId and mints an adventurer
+    function claimForLootWithAdventurer(uint256 tokenId) external {
+        _claimWithAdventurer(tokenId, _msgSender());
+    }
+
+    /// @notice Claims all components for caller and mints an adventurer
+    function claimAllForOwnerWithAdventurer() external {
+        uint256 tokenBalanceOwner = loot.balanceOf(_msgSender());
+
+        // Check that caller owns any Loots
+        require(tokenBalanceOwner > 0, "NO_TOKENS_OWNED");
+
+        // i < tokenBalanceOwner because tokenBalanceOwner is 1-indexed
+        for (uint256 i = 0; i < tokenBalanceOwner; i++) {
+            _claimWithAdventurer(loot.tokenOfOwnerByIndex(_msgSender(), i), _msgSender());
+        }
+    }
+
+    /// @notice Claims all components for given IDs and mints an adventurer
+    function claimForTokenIdsWithAdventurer(uint256[] memory tokenIds) external {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _claimWithAdventurer(tokenIds[i], _msgSender());
         }
     }
 
@@ -113,6 +158,53 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata {
         emit TransferBatch(_msgSender(), address(0), tokenOwner, ids, amounts);
     }
 
+    /// @notice Claim all components for a loot bag. Performs safety checks
+    function _claimWithAdventurer(uint256 tokenId, address tokenOwner) internal {
+        // Check that caller owns the loot bag
+        require(tokenOwner == loot.ownerOf(tokenId), "MUST_OWN_TOKEN_ID");
+
+        // Check that the token ID is in range
+        // We use >= and <= to here because all of the token IDs are 0-indexed
+        require(tokenId >= tokenIdStart && tokenId <= tokenIdEnd, "TOKEN_ID_OUT_OF_RANGE");
+
+        // Check that components not claimed already
+        require(!claimedByTokenId[tokenId], "ALREADY_CLAIMED");
+
+        // Mark as claimed
+        claimedByTokenId[tokenId] = true;
+
+        // NB: We patched ERC1155 to expose `_balances` so
+        // that we can manually mint to a user, and manually emit a `TransferBatch`
+        // event. If that's unsafe, we can fallback to using _mint
+        uint256[] memory ids = new uint256[](8);
+        uint256[] memory amounts = new uint256[](8);
+        ids[0] = itemId(tokenId, weaponComponents, WEAPON);
+        ids[1] = itemId(tokenId, chestComponents, CHEST);
+        ids[2] = itemId(tokenId, headComponents, HEAD);
+        ids[3] = itemId(tokenId, waistComponents, WAIST);
+        ids[4] = itemId(tokenId, footComponents, FOOT);
+        ids[5] = itemId(tokenId, handComponents, HAND);
+        ids[6] = itemId(tokenId, neckComponents, NECK);
+        ids[7] = itemId(tokenId, ringComponents, RING);
+
+        // Mint an adventurer to the claimer
+        uint256 adventurerId = adventurer.totalSupply();
+        adventurer.mintToAccount(tokenOwner);
+        bytes memory adventurerIdBytes = toBytes(adventurerId);
+
+        // Mint and equip the adventurer with the items
+        for (uint256 i = 0; i < ids.length; i++) {
+            amounts[i] = 1;
+
+            // +21k per call / unavoidable - requires patching OZ
+            // mint to this contract
+            _balances[ids[i]][tokenOwner] += 1;
+            _safeTransferFrom(tokenOwner, address(adventurer), ids[i], 1, adventurerIdBytes);
+        }
+
+        emit TransferBatch(_msgSender(), address(0), tokenOwner, ids, amounts);
+    }
+
     function itemId(
         uint256 tokenId,
         function(uint256) view returns (uint256[5] memory) componentsFn,
@@ -124,5 +216,17 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata {
 
     function uri(uint256 tokenId) public view override returns (string memory) {
         return tokenURI(tokenId);
+    }
+
+    /**
+    * @dev Convert uint to bytes.
+    */
+    function toBytes(uint256 x) internal pure returns (bytes memory b) {
+        b = new bytes(32);
+        assembly { mstore(add(b, 32), x) }
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata) external override returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }

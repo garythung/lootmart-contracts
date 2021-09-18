@@ -6,7 +6,7 @@ LootMart is an ERC-1155 contract that allows you to claim individual components 
 
 Mint your components by calling `claimForLoot(uint256 tokenId)`, `claimAllForOwner()`, or `claimForTokenIds(uint256[] memory tokenIds)`.
 
-## Building and testing
+## Building
 
 1. `npm i`
 2. Set up a `.env` file with a `ALCHEMY_MAINNET_URL` which is an Alchemy node for [forking mainnet](https://hardhat.org/hardhat-network/guides/mainnet-forking.html).

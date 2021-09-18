@@ -1,6 +1,7 @@
 require("dotenv").config();
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-ethers");
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -21,6 +22,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: process.env.ALCHEMY_MAINNET_URL,
+        blockNumber: 13246654,
       },
       chainId: 1337,
     },

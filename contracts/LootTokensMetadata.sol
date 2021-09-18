@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./LootComponents.sol";
 import "./TokenId.sol";
+import "./ILootMart.sol";
 import {Base64, toString} from "./MetadataUtils.sol";
 
 struct ItemIds {
@@ -32,7 +33,7 @@ struct ItemNames {
 /// the individual items inside a Loot bag.
 /// @author Gary Thung, forked from Georgios Konstantopoulos
 /// @dev Inherit from this contract and use it to generate metadata for your tokens
-contract LootTokensMetadata is LootComponents {
+contract LootTokensMetadata is ILootMart, LootComponents {
     uint256 internal constant WEAPON = 0x0;
     uint256 internal constant CHEST = 0x1;
     uint256 internal constant HEAD = 0x2;
@@ -140,9 +141,18 @@ contract LootTokensMetadata is LootComponents {
     }
 
     /// @notice Returns the item type of this component.
-    function tokenItemType(uint256 id) public pure returns (uint256) {
+    function itemTypeFor(uint256 id) external pure override returns (string memory) {
         (, uint256 _itemType) = TokenId.fromId(id);
-        return _itemType;
+        return [
+            "weapon",
+            "chest",
+            "head",
+            "waist",
+            "foot",
+            "hand",
+            "neck",
+            "ring"
+        ][_itemType];
     }
 
     // Helper for encoding as json w/ trait_type / value from opensea
