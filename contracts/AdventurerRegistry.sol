@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import "./LootMartId.sol";
+import "./LootmartId.sol";
 
 contract AdventurerRegistry is Ownable {
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -70,12 +70,12 @@ contract AdventurerRegistry is Ownable {
   }
 
   function add721Contract(address _contract) external onlyOwner {
-    require(_contract.supportsInterface(LootMartId.LOOT_MART_INTERFACE_ID), "Must implement LootMart interface");
+    require(_contract.supportsInterface(LootmartId.LOOT_MART_INTERFACE_ID), "Must implement Lootmart interface");
     allowed721Contracts.add(_contract);
   }
 
   function add1155Contract(address _contract) external onlyOwner {
-    require(_contract.supportsInterface(LootMartId.LOOT_MART_INTERFACE_ID), "Must implement LootMart interface");
+    require(_contract.supportsInterface(LootmartId.LOOT_MART_INTERFACE_ID), "Must implement Lootmart interface");
     allowed1155Contracts.add(_contract);
   }
 

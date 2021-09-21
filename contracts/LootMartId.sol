@@ -1,11 +1,8 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
-// contract ILootMartId {
-//   bytes4 internal constant LOOT_MART_INTERFACE_ID = 0xeea73b1a;
-// }
-
-library LootMartId {
+library LootmartId {
   bytes4 internal constant LOOT_MART_INTERFACE_ID = 0xeea73b1a;
 }

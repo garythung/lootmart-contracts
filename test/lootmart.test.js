@@ -12,7 +12,7 @@ const ITEM_TYPES = [
   "ring",
 ];
 
-describe("LootMart", function () {
+describe("Lootmart", function () {
   var loot;
   var registry;
   var adventurer;
@@ -38,12 +38,12 @@ describe("LootMart", function () {
     );
     await adventurer.deployed();
 
-    // Deploy LootMart
-    const LootMart = await ethers.getContractFactory("LootMart");
-    lootMart = await LootMart.deploy(
+    // Deploy Lootmart
+    const Lootmart = await ethers.getContractFactory("Lootmart");
+    lootMart = await Lootmart.deploy(
       loot.address, // Loot local address
       adventurer.address, // Adventurer local address
-      "ipfs://QmVc4SFS3fHRb2biavZoQKfvxjFDmKK6DFRUPfrN1K7Gnz" // LootMart items
+      "ipfs://QmVc4SFS3fHRb2biavZoQKfvxjFDmKK6DFRUPfrN1K7Gnz" // Lootmart items
     );
     await lootMart.deployed();
 
@@ -52,17 +52,17 @@ describe("LootMart", function () {
     owner2 = (await ethers.getSigners())[1];
   });
 
-  it("Should add LootMart to registry", async function () {
+  it("Should add Lootmart to registry", async function () {
     await registry.add1155Contract(lootMart.address);
     expect(await registry.isValidContract(lootMart.address)).to.be.true;
     expect(await registry.isValid1155Contract(lootMart.address)).to.be.true;
   });
 
-  it("Should be able to claim LootMart items standalone", async function () {
+  it("Should be able to claim Lootmart items standalone", async function () {
     const lootId = "5555";
     await loot.claim(lootId);
 
-    // LootMart balances for owner account before claim
+    // Lootmart balances for owner account before claim
     const balancesBefore = {};
     const ids = await lootMart.ids(lootId);
     for (let i = 0; i < ids.length; i++) {
@@ -70,7 +70,7 @@ describe("LootMart", function () {
       balancesBefore[id] = await lootMart.balanceOf(owner.address, id);
     }
 
-    // LootMart balances for owner account after claim
+    // Lootmart balances for owner account after claim
     await lootMart.claimForLoot(lootId);
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
@@ -79,15 +79,15 @@ describe("LootMart", function () {
       );
     }
 
-    // Check that LootMart has been claimed
+    // Check that Lootmart has been claimed
     expect(await lootMart.claimedByTokenId(lootId)).to.equal(true);
   });
 
-  it("Should be able to claim LootMart items with an Adventurer", async function () {
+  it("Should be able to claim Lootmart items with an Adventurer", async function () {
     const lootId = "123";
     await loot.claim(lootId);
 
-    // LootMart balances for Adventurer contract before claim
+    // Lootmart balances for Adventurer contract before claim
     const balancesBefore = {};
     const ids = await lootMart.ids(lootId);
     for (let i = 0; i < ids.length; i++) {
@@ -102,7 +102,7 @@ describe("LootMart", function () {
       adventurerBalanceBefore.add(1)
     );
 
-    // LootMart balances for Adventurer contract after claim
+    // Lootmart balances for Adventurer contract after claim
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
       expect(await lootMart.balanceOf(adventurer.address, id)).to.equal(
@@ -110,7 +110,7 @@ describe("LootMart", function () {
       );
     }
 
-    // Check that LootMart has been claimed
+    // Check that Lootmart has been claimed
     expect(await lootMart.claimedByTokenId(lootId)).to.equal(true);
   });
 

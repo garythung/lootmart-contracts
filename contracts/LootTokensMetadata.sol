@@ -1,9 +1,11 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 import "./LootComponents.sol";
 import "./TokenId.sol";
-import "./ILootMart.sol";
+import "./ILootmart.sol";
 import {Base64, toString} from "./MetadataUtils.sol";
 
 struct ItemIds {
@@ -33,7 +35,7 @@ struct ItemNames {
 /// the individual items inside a Loot bag.
 /// @author Gary Thung, forked from Georgios Konstantopoulos
 /// @dev Inherit from this contract and use it to generate metadata for your tokens
-contract LootTokensMetadata is ILootMart, LootComponents {
+contract LootTokensMetadata is ILootmart, LootComponents {
     uint256 internal constant WEAPON = 0x0;
     uint256 internal constant CHEST = 0x1;
     uint256 internal constant HEAD = 0x2;
@@ -61,7 +63,7 @@ contract LootTokensMetadata is ILootMart, LootComponents {
     }
 
     function name() external pure returns (string memory) {
-        return "LootMart";
+        return "Lootmart";
     }
 
     function symbol() external pure returns (string memory) {
@@ -74,7 +76,7 @@ contract LootTokensMetadata is ILootMart, LootComponents {
 
     /// @dev Opensea contract metadata: https://docs.opensea.io/docs/contract-level-metadata
     function contractURI() external pure returns (string memory) {
-      string memory json = '{"name": "LootMart", "description": "LootMart lets you unbundle your Loot Bags into individual ERC1155 NFTs or rebundle items into their original Loot Bags."}';
+      string memory json = '{"name": "Lootmart", "description": "Lootmart lets you unbundle your Loot Bags into individual ERC1155 NFTs or rebundle items into their original Loot Bags."}';
       string memory encodedJson = Base64.encode(bytes(json));
       string memory output = string(abi.encodePacked('data:application/json;base64,', encodedJson));
 
@@ -88,7 +90,7 @@ contract LootTokensMetadata is ILootMart, LootComponents {
                 string(
                     abi.encodePacked(
                         '{ "name": "', tokenName(tokenId),'", ',
-                        '"description": ', '"LootMart breaks down your Loot into components that you can trade and use to explore the Loot universe.", ',
+                        '"description": ', '"Lootmart breaks down your Loot into components that you can trade and use to explore the Loot universe.", ',
                         '"image": ', '"', baseURI, '/', toString(tokenId), '.png", ',
                         '"attributes": ', attributes(tokenId),
                         '}'

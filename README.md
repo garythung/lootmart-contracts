@@ -1,10 +1,18 @@
-# <h1 align="center"> LootMart </h1>
+# <h1 align="center"> Lootmart </h1>
 
 **Unbundle your Loot into components**
 
-LootMart is an ERC-1155 contract that allows you to claim individual components from your Loot. Each ERC1155's token image points to a piece of art stored on IPFS.
+Lootmart is an ERC-1155 contract that allows you to claim individual components from your Loot. Each ERC1155's token image points to a piece of art stored on IPFS.
 
-Mint your components by calling `claimForLoot(uint256 tokenId)`, `claimAllForOwner()`, or `claimForTokenIds(uint256[] memory tokenIds)`.
+Mint your components by calling `claimForLoot(uint256 tokenId)`, `claimAllForOwner()`, or `claimForTokenIds(uint256[] memory tokenIds)`. You can mint an `Adventurer` as well by calling `claimForLootWithAdventurer(uint256 tokenId)` (and same with the other 2 claim functions `WithAdventurer` appended). This will mint you an Adventurer with your Lootmart set equipped.
+
+## Adventurer
+
+The Adventurer is a composable NFT inspired by the [ERC-998](https://eips.ethereum.org/EIPS/eip-998) standard. There is an AdventurerRegistry paired with the Adventurer that specifies which 721 and 1155 contracts are valid to equip the Adventurer with, as well as valid item slots.
+
+To equip items, you must approve the Adventurer contract to transfer your items for that contract. Then, call `equip` with the item details. `equip` will unequip the existing item in the slot and send it back to you if there is one, and then equip the new one.
+
+To unequip items, call `unequip` with the item type. The Adventurer contract will send you back the item.
 
 ## Building
 
@@ -12,7 +20,7 @@ Mint your components by calling `claimForLoot(uint256 tokenId)`, `claimAllForOwn
 2. Set up a `.env` file with a `ALCHEMY_MAINNET_URL` which is an Alchemy node for [forking mainnet](https://hardhat.org/hardhat-network/guides/mainnet-forking.html).
 3. `npx hardhat compile`
 4. `npx hardhat node`
-5. `npm run deploy`. This step will deploy the LootMart contract to your local network. The console will return the address of the LootMart contract.
+5. `npm run deploy`. This step will deploy the Lootmart contract to your local network. The console will return the address of the Lootmart contract.
 
 ### Security Notes
 
@@ -23,7 +31,7 @@ to be cheaper to use, since it did a lot of redundant `SLOAD`s in hot code paths
 
 ### Credits
 
-LootMart is a fork of [LootLoose](https://github.com/gakonst/lootloose). Credit to [@gakonst](https://twitter.com/gakonst) for that.
+Lootmart is a fork of [LootLoose](https://github.com/gakonst/lootloose). Credit to [@gakonst](https://twitter.com/gakonst) for that.
 
 ### Disclaimer
 

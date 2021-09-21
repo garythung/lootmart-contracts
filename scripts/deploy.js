@@ -35,34 +35,34 @@ async function main() {
   await adventurer.deployed();
   console.log("Adventurer deployed to:", adventurer.address);
 
-  // Deploy LootMart
-  const LootMart = await hre.ethers.getContractFactory("LootMart");
-  const lootMart = await LootMart.deploy(
+  // Deploy Lootmart
+  const Lootmart = await hre.ethers.getContractFactory("Lootmart");
+  const lootMart = await Lootmart.deploy(
     // "0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7", // Loot mainnet address
     loot.address, // Loot local address
     adventurer.address, // Adventurer local address
-    "ipfs://QmUXVGz1QbzGbTHLw7gZL9YTQF4fXGK8DiyGmBWx6KkKUU" // LootMart items
+    "ipfs://QmUXVGz1QbzGbTHLw7gZL9YTQF4fXGK8DiyGmBWx6KkKUU" // Lootmart items
   );
   await lootMart.deployed();
-  console.log("LootMart deployed to:", lootMart.address);
+  console.log("Lootmart deployed to:", lootMart.address);
 
   // Add lootmart to registry
   await registry.add1155Contract(lootMart.address);
 
   // Claim Loot
-  const signer0 = (await hre.ethers.getSigners())[0]; // this gives you signing power to the account 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
-  const liveLoot = await hre.ethers.getContractAt(
-    "Loot",
-    loot.address,
-    signer0
-  );
+  // const signer0 = (await hre.ethers.getSigners())[0]; // this gives you signing power to the account 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  // const liveLoot = await hre.ethers.getContractAt(
+  //   "Loot",
+  //   loot.address,
+  //   signer0
+  // );
 
-  await liveLoot.claim("123");
-  await liveLoot.claim("456");
-  await liveLoot.claim("789");
-  await liveLoot.claim("1000");
-  await lootMart.claimForLootWithAdventurer("123");
-  await lootMart.claimForLoot("456");
+  // await liveLoot.claim("123");
+  // await liveLoot.claim("456");
+  // await liveLoot.claim("789");
+  // await liveLoot.claim("1000");
+  // await lootMart.claimForLootWithAdventurer("123");
+  // await lootMart.claimForLoot("456");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

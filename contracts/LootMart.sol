@@ -1,15 +1,15 @@
 //SPDX-License-Identifier: GPL-3.0-or-later
+
 pragma solidity ^0.8.0;
+pragma experimental ABIEncoderV2;
 
 // ============ Imports ============
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LootTokensMetadata.sol";
-import "./Adventurer.sol";
 
 interface ILootAirdrop {
     function claimForLoot(uint256) external payable;
@@ -34,13 +34,13 @@ library Errors {
 /// @author Gary Thung, forked from Georgios Konstantopoulos
 /// @notice Allows "opening" your ERC721 Loot bags and extracting the items inside it
 /// The created tokens are ERC1155 compatible, and their on-chain SVG is their name
-contract LootMart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
+contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
     // The OG Loot bags contract
     IERC721Enumerable immutable loot;
 
     IAdventurer immutable adventurer;
 
-    // Track claimed LootMart components
+    // Track claimed Lootmart components
     mapping(uint256 => bool) public claimedByTokenId;
 
     // tokenIdStart of 1 is based on the following lines in the Loot contract:
@@ -171,7 +171,7 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
     /// @notice Mints the individual items. Can mint to a new Adventurer.
     function _mintItems(uint256[] memory _ids, address _tokenOwner, bool _withAdventurer) internal {
         if (_withAdventurer) {
-            // Mint an adventurer to LootMart
+            // Mint an adventurer to Lootmart
             uint256 adventurerId = adventurer.totalSupply();
             adventurer.mint();
 
@@ -183,7 +183,7 @@ contract LootMart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
                 adventurer.equip(adventurerId, address(this), _ids[i]);
             }
 
-            // Transfer adventurer from LootMart to claimer
+            // Transfer adventurer from Lootmart to claimer
             adventurer.safeTransferFrom(address(this), _tokenOwner, adventurerId);
         } else {
             for (uint256 i = 0; i < _ids.length; i++) {

@@ -7,11 +7,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./ERC998TopDown.sol";
-import "./IERC998TopDown.sol";
-import "./ILootMart.sol";
+import "./ILootmart.sol";
 
 interface IRegistry {
   function isValid721Contract(address _contract) external view returns (bool);
@@ -20,7 +18,7 @@ interface IRegistry {
   function isValidItemType(string memory _itemType) external view returns (bool);
 }
 
-contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard {
+contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable {
   using ERC165Checker for address;
 
   struct Item {
@@ -31,8 +29,6 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   event Equipped(uint256 indexed tokenId, address indexed itemAddress, uint256 indexed itemId, string itemType);
   event Unequipped(uint256 indexed tokenId, address indexed itemAddress, uint256 indexed itemId, string itemType);
 
-  // What does adventurer 1 have equipped?
-  // equipped[token Id] = { "head": { itemAddress: "0xAbc", tokenId: 1 } }
   mapping(uint256 => mapping(string => Item)) public equipped;
 
   bytes4 internal constant ERC_721_INTERFACE = 0x80ac58cd;
@@ -40,7 +36,7 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
 
   IRegistry internal registry;
 
-  constructor(address _registry) ERC998TopDown("Adventurer", "AVTR") {
+  constructor(address _registry) ERC998TopDown("Adventurer", "ADVT") {
     registry = IRegistry(_registry);
   }
 
@@ -191,7 +187,7 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   ) internal {
     require(registry.isValidContract(_itemAddress), "Adventurer: Item contract must be in the registry");
 
-    string memory itemType = ILootMart(_itemAddress).itemTypeFor(_itemId);
+    string memory itemType = ILootmart(_itemAddress).itemTypeFor(_itemId);
     require(registry.isValidItemType(itemType), "Adventurer: Invalid item type");
 
     // Get current item
@@ -292,13 +288,13 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   }
 
   function _beforeChild1155Transfer(
-      address operator,
-      uint256 fromTokenId,
-      address to,
-      address childContract,
-      uint256[] memory ids,
-      uint256[] memory amounts,
-      bytes memory data
+    address operator,
+    uint256 fromTokenId,
+    address to,
+    address childContract,
+    uint256[] memory ids,
+    uint256[] memory amounts,
+    bytes memory data
   ) internal override virtual {
     super._beforeChild1155Transfer(operator, fromTokenId, to, childContract, ids, amounts, data);
   }
