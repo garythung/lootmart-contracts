@@ -41,7 +41,7 @@ async function main() {
     // "0xff9c1b15b16263c61d017ee9f65c50e4ae0113d7", // Loot mainnet address
     loot.address, // Loot local address
     adventurer.address, // Adventurer local address
-    "ipfs://QmVc4SFS3fHRb2biavZoQKfvxjFDmKK6DFRUPfrN1K7Gnz" // LootMart items
+    "ipfs://QmUXVGz1QbzGbTHLw7gZL9YTQF4fXGK8DiyGmBWx6KkKUU" // LootMart items
   );
   await lootMart.deployed();
   console.log("LootMart deployed to:", lootMart.address);

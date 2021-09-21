@@ -26,6 +26,10 @@ module.exports = {
       },
       chainId: 1337,
     },
+    rinkeby: {
+      url: process.env.ALCHEMY_RINKEBY_URL,
+      accounts: [`0x${process.env.RINKEBY_PRIVATE_KEY}`],
+    },
   },
   dependencyCompiler: {
     paths: [],

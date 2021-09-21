@@ -68,7 +68,7 @@ contract LootTokensMetadata is ILootMart, LootComponents {
         return "MART";
     }
 
-    function setBaseURI(string memory _newBaseURI) internal {
+    function setBaseURI(string memory _newBaseURI) external {
         baseURI = _newBaseURI;
     }
 
@@ -83,16 +83,13 @@ contract LootTokensMetadata is ILootMart, LootComponents {
 
     /// @notice Returns an SVG for the provided token id
     function tokenURI(uint256 tokenId) public view returns (string memory) {
-        (uint256[5] memory components, uint256 itemType) = TokenId.fromId(tokenId);
-        string memory id = string(abi.encodePacked(toString(itemType), '_', toString(components[0]), '_', toString(components[1]), '_', toString(components[2]), '_', toString(components[3]), '_', toString(components[4]), '.png'));
-
         string memory json = Base64.encode(
             bytes(
                 string(
                     abi.encodePacked(
                         '{ "name": "', tokenName(tokenId),'", ',
-                        '"description" : ', '"LootMart breaks down your Loot bag into components that you can use to trade and explore the Loot universe.", ',
-                        '"image": ', baseURI, '/', id, '.png',
+                        '"description": ', '"LootMart breaks down your Loot into components that you can trade and use to explore the Loot universe.", ',
+                        '"image": ', '"', baseURI, '/', toString(tokenId), '.png", ',
                         '"attributes": ', attributes(tokenId),
                         '}'
                     )
