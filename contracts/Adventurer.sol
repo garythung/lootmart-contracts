@@ -12,11 +12,11 @@ import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./ERC998TopDown.sol";
 import "./IERC998TopDown.sol";
 import "./ILootMart.sol";
-import "hardhat/console.sol";
 
 interface IRegistry {
   function isValid721Contract(address _contract) external view returns (bool);
   function isValid1155Contract(address _contract) external view returns (bool);
+  function isValidContract(address _contract) external view returns (bool);
   function isValidItemType(string memory _itemType) external view returns (bool);
 }
 
@@ -27,6 +27,9 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
     address itemAddress;
     uint256 id;
   }
+
+  event Equipped(uint256 indexed tokenId, address indexed itemAddress, uint256 indexed itemId, string itemType);
+  event Unequipped(uint256 indexed tokenId, address indexed itemAddress, uint256 indexed itemId, string itemType);
 
   // What does adventurer 1 have equipped?
   // equipped[token Id] = { "head": { itemAddress: "0xAbc", tokenId: 1 } }
@@ -48,11 +51,9 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   /**
    * @dev Ensure caller affecting an adventurer is authorized.
    */
-  function requireAuthorized(address owner, address operator) internal view {
-    require(
-      owner == operator || isApprovedForAll(owner, operator),
-      "ERC998: caller is not owner nor approved"
-    );
+  modifier onlyAuthorized(uint256 _tokenId) {
+    require(_isApprovedOrOwner(msg.sender, _tokenId), "Adventurer: Caller is not owner nor approved");
+    _;
   }
 
   // MINTING //
@@ -70,96 +71,103 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   /**
    * @dev Execute a series of equips followed by a series of unequips.
    *
-   * NOTE: This may be inefficient. Clients should reduce the changes down to the simplest set.
-   * For example, imagine an Adventurer with a head equipped. Calling bulkChanges with a new
-   * head to equip and a head unequip will result in the Adventurer having no head equipped.
+   * NOTE: Clients should reduce the changes down to the simplest set.
+   * For example, imagine an Adventurer with a head equipped and the goal is to equip a new head item.
+   * Calling bulkChanges with both a new head to equip and a head unequip will result in the Adventurer
+   * ultimately having no head equipped. The simplest change would be to do only an equip.
    */
-  function bulkChanges(uint256 tokenId, address[] memory equipItemAddresses, uint256[] memory equipItemIds, string[] memory unequipItemTypes) external {
-    address operator = _msgSender();
-    address owner = ownerOf(tokenId);
-    requireAuthorized(owner, operator);
-
+  function bulkChanges(
+    uint256 _tokenId,
+    address[] memory _equipItemAddresses,
+    uint256[] memory _equipItemIds,
+    string[] memory _unequipItemTypes
+  ) external onlyAuthorized(_tokenId) {
     // Execute equips
-    for (uint256 i = 0; i < equipItemAddresses.length; i++) {
-      // this will trigger onERC[721|1155]Received
-      _transferItemIn(tokenId, operator, equipItemAddresses[i], equipItemIds[i]);
+    for (uint256 i = 0; i < _equipItemAddresses.length; i++) {
+      _equip(_tokenId, _equipItemAddresses[i], _equipItemIds[i]);
     }
 
     // Execute unequips
-    for (uint256 i = 0; i < unequipItemTypes.length; i++) {
-      _unequip(tokenId, unequipItemTypes[i]);
+    for (uint256 i = 0; i < _unequipItemTypes.length; i++) {
+      _unequip(_tokenId, _unequipItemTypes[i]);
     }
   }
 
   /**
    * @dev Equip an item.
-   *
-   * NOTE: Authorization is not checked here. It's handled in the receiver callback.
    */
-  function equip(uint256 tokenId, address itemAddress, uint256 itemId) external {
-    address operator = _msgSender();
-
-    // this will trigger onERC[721|1155]Received
-    _transferItemIn(tokenId, operator, itemAddress, itemId);
+  function equip(
+    uint256 _tokenId,
+    address _itemAddress,
+    uint256 _itemId
+  ) external onlyAuthorized(_tokenId) {
+    _equip(_tokenId, _itemAddress, _itemId);
   }
 
   /**
    * @dev Equip a list of items.
-   *
-   * NOTE: Authorization is not checked here. It's handled in the receiver callback.
    */
-  function equipBulk(uint256 tokenId, address[] memory itemAddresses, uint256[] memory itemIds) external {
-    address operator = _msgSender();
-
-    for (uint256 i = 0; i < itemAddresses.length; i++) {
-      // this will trigger onERC[721|1155]Received
-      _transferItemIn(tokenId, operator, itemAddresses[i], itemIds[i]);
+  function equipBulk(
+    uint256 _tokenId,
+    address[] memory _itemAddresses,
+    uint256[] memory _itemIds
+  ) external onlyAuthorized(_tokenId) {
+    for (uint256 i = 0; i < _itemAddresses.length; i++) {
+      _equip(_tokenId, _itemAddresses[i], _itemIds[i]);
     }
   }
 
   /**
    * @dev Unequip an item.
    */
-  function unequip(uint256 tokenId, string memory itemType) external {
-    address operator = _msgSender();
-    address owner = ownerOf(tokenId);
-    requireAuthorized(owner, operator);
-
-    _unequip(tokenId, itemType);
+  function unequip(
+    uint256 _tokenId,
+    string memory _itemType
+  ) external onlyAuthorized(_tokenId) {
+    _unequip(_tokenId, _itemType);
   }
 
   /**
    * @dev Unequip a list of items.
    */
-  function unequipBulk(uint256 tokenId, string[] memory itemTypes) external {
-    address operator = _msgSender();
-    address owner = ownerOf(tokenId);
-    requireAuthorized(owner, operator);
-
-    for (uint256 i = 0; i < itemTypes.length; i++) {
-      _unequip(tokenId, itemTypes[i]);
+  function unequipBulk(
+    uint256 _tokenId,
+    string[] memory _itemTypes
+  ) external onlyAuthorized(_tokenId) {
+    for (uint256 i = 0; i < _itemTypes.length; i++) {
+      _unequip(_tokenId, _itemTypes[i]);
     }
   }
 
   // LOGIC //
 
   /**
-   * @dev Execute transfer from component contract to this contract.
+   * @dev Execute inbound transfer from a component contract to this contract.
    */
-  function _transferItemIn(uint256 _tokenId, address _operator, address _itemAddress, uint256 _itemId) internal {
+  function _transferItemIn(
+    uint256 _tokenId,
+    address _operator,
+    address _itemAddress,
+    uint256 _itemId
+  ) internal {
     if (_itemAddress.supportsInterface(ERC_721_INTERFACE)) {
       IERC721(_itemAddress).safeTransferFrom(_operator, address(this), _itemId, toBytes(_tokenId));
     } else if (_itemAddress.supportsInterface(ERC_1155_INTERFACE)) {
       IERC1155(_itemAddress).safeTransferFrom(_operator, address(this), _itemId, 1, toBytes(_tokenId));
     } else {
-      require(false, "Item does not support ERC-721 or ERC-1155");
+      require(false, "Adventurer: Item does not support ERC-721 nor ERC-1155 standards");
     }
   }
 
   /**
-   * @dev Execute transfer of a child out.
+   * @dev Execute outbound transfer of a child token.
    */
-  function _transferItemOut(uint256 _tokenId, address _owner, address _itemAddress, uint256 _itemId) internal {
+  function _transferItemOut(
+    uint256 _tokenId,
+    address _owner,
+    address _itemAddress,
+    uint256 _itemId
+  ) internal {
     if (child721Balance(_tokenId, _itemAddress, _itemId) == 1) {
       safeTransferChild721From(_tokenId, _owner, _itemAddress, _itemId, "");
     } else if (child1155Balance(_tokenId, _itemAddress, _itemId) >= 1) {
@@ -168,113 +176,108 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable, ReentrancyGuard
   }
 
   /**
-   * @dev This marks a new item as equipped and sends back whatever is currently equipped.
-   * It does not handle the transferring the new item in; that's done by the receiver callback.
+   * @dev Execute the logic required to equip a single item. This involves:
+   *
+   * 1. Checking that the component contract is registered
+   * 2. Check that the item type is valid
+   * 3. Mark the new item as equipped
+   * 4. Transfer the new item to this contract
+   * 5. Transfer the old item back to the owner
    */
-  function _equip(uint256 tokenId, address itemAddress, uint256 itemId) internal {
-    string memory itemType = ILootMart(itemAddress).itemTypeFor(itemId);
-    require(registry.isValidItemType(itemType), "Invalid item type");
+  function _equip(
+    uint256 _tokenId,
+    address _itemAddress,
+    uint256 _itemId
+  ) internal {
+    require(registry.isValidContract(_itemAddress), "Adventurer: Item contract must be in the registry");
+
+    string memory itemType = ILootMart(_itemAddress).itemTypeFor(_itemId);
+    require(registry.isValidItemType(itemType), "Adventurer: Invalid item type");
 
     // Get current item
-    Item memory item = equipped[tokenId][itemType];
+    Item memory item = equipped[_tokenId][itemType];
     address currentItemAddress = item.itemAddress;
     uint256 currentItemId = item.id;
 
     // Equip the new item
-    equipped[tokenId][itemType] = Item({ itemAddress: itemAddress, id: itemId });
+    equipped[_tokenId][itemType] = Item({ itemAddress: _itemAddress, id: _itemId });
+
+    // Pull in the item
+    _transferItemIn(_tokenId, _msgSender(), _itemAddress, _itemId);
 
     // Send back old item
     if (currentItemAddress != address(0)) {
-      _transferItemOut(tokenId, ownerOf(tokenId), currentItemAddress, currentItemId);
+      _transferItemOut(_tokenId, ownerOf(_tokenId), currentItemAddress, currentItemId);
     }
+
+    emit Equipped(_tokenId, _itemAddress, _itemId, itemType);
   }
 
   /**
-   * @dev Logic for unequipping an item. Will mark the slot as unequipped and send back
-   * what's currently equipped.
+   * @dev Execute the logic required to equip a single item. This involves:
+   *
+   * 1. Mark the item as unequipped
+   * 2. Transfer the item back to the owner
    */
-  function _unequip(uint256 tokenId, string memory itemType) internal {
+  function _unequip(
+    uint256 _tokenId,
+    string memory _itemType
+  ) internal {
     // Get current item
-    Item memory item = equipped[tokenId][itemType];
+    Item memory item = equipped[_tokenId][_itemType];
     address currentItemAddress = item.itemAddress;
     uint256 currentItemId = item.id;
 
     // Mark item unequipped
-    delete equipped[tokenId][itemType];
+    delete equipped[_tokenId][_itemType];
 
     // Send back old item
-    _transferItemOut(tokenId, ownerOf(tokenId), currentItemAddress, currentItemId);
+    _transferItemOut(_tokenId, ownerOf(_tokenId), currentItemAddress, currentItemId);
+
+    emit Unequipped(_tokenId, currentItemAddress, currentItemId, _itemType);
   }
 
   // CALLBACKS //
 
   /**
-   * @dev Handle equipping new items. Updates underlying structure of 998.
+   * @dev Only allow this contract to execute inbound transfers. Executes super's receiver to update underlying bookkeeping.
    */
-  function onERC721Received(address operator, address from, uint256 id, bytes memory data) public override returns (bytes4) {
-    require(registry.isValid721Contract(msg.sender), "Registry: item contract must be in the registry");
-    require(data.length == 32, "ERC998: data must contain the unique uint256 tokenId to transfer the child token to");
-
-    uint256 _receiverTokenId;
-    uint256 _index = msg.data.length - 32;
-    assembly {_receiverTokenId := calldataload(_index)}
-
-    // Sender of item to Adventurer must be authorized
-    address owner = ownerOf(_receiverTokenId);
-    requireAuthorized(owner, operator);
-
-    _equip(_receiverTokenId, msg.sender, id);
-    _receiveChild721(_receiverTokenId, msg.sender, id);
-    emit ReceivedChild721(from, _receiverTokenId, msg.sender, id);
-
-    return IERC721Receiver.onERC721Received.selector;
+  function onERC721Received(
+    address operator,
+    address from,
+    uint256 id,
+    bytes memory data
+  ) public override returns (bytes4) {
+    require(operator == address(this), "Adventurer: Only the Adventurer contract can pull items in");
+    return super.onERC721Received(operator, from, id, data);
   }
 
   /**
-   * @dev Handle equipping new items. Updates underlying structure of 998.
+   * @dev Only allow this contract to execute inbound transfers. Executes super's receiver to update underlying bookkeeping.
    */
-  function onERC1155Received(address operator, address from, uint256 id, uint256 amount, bytes memory data) public override returns (bytes4) {
-    require(registry.isValid1155Contract(msg.sender), "Registry: item contract must be in the registry");
-    require(data.length == 32, "ERC998: data must contain the unique uint256 tokenId to transfer the child token to");
-
-    uint256 _receiverTokenId;
-    uint256 _index = msg.data.length - 32;
-    assembly {_receiverTokenId := calldataload(_index)}
-
-    // Sender of item to Adventurer must be authorized
-    address owner = ownerOf(_receiverTokenId);
-    requireAuthorized(owner, operator);
-
-    _equip(_receiverTokenId, msg.sender, id);
-    _receiveChild1155(_receiverTokenId, msg.sender, id, amount);
-    emit ReceivedChild1155(from, _receiverTokenId, msg.sender, id, amount);
-
-    return IERC1155Receiver.onERC1155Received.selector;
+  function onERC1155Received(
+    address operator,
+    address from,
+    uint256 id,
+    uint256 amount,
+    bytes memory data
+  ) public override returns (bytes4) {
+    require(operator == address(this), "Only the Adventurer contract can pull items in");
+    return super.onERC1155Received(operator, from, id, amount, data);
   }
 
   /**
-   * @dev Handle equipping new items. Updates underlying structure of 998.
+   * @dev Only allow this contract to execute inbound transfers. Executes super's receiver to update underlying bookkeeping.
    */
-  function onERC1155BatchReceived(address operator, address from, uint256[] memory ids, uint256[] memory values, bytes memory data) public override returns (bytes4) {
-    require(registry.isValid1155Contract(msg.sender), "Registry: item contract must be in the registry");
-    require(data.length == 32, "ERC998: data must contain the unique uint256 tokenId to transfer the child token to");
-    require(ids.length == values.length, "ERC1155: ids and values length mismatch");
-
-    uint256 _receiverTokenId;
-    uint256 _index = msg.data.length - 32;
-    assembly {_receiverTokenId := calldataload(_index)}
-
-    // Sender of item to Adventurer must be authorized
-    address owner = ownerOf(_receiverTokenId);
-    requireAuthorized(owner, operator);
-
-    for (uint256 i = 0; i < ids.length; i++) {
-      _equip(_receiverTokenId, msg.sender, ids[i]);
-      _receiveChild1155(_receiverTokenId, msg.sender, ids[i], values[i]);
-      emit ReceivedChild1155(from, _receiverTokenId, msg.sender, ids[i], values[i]);
-    }
-
-    return IERC1155Receiver.onERC1155BatchReceived.selector;
+  function onERC1155BatchReceived(
+    address operator,
+    address from,
+    uint256[] memory ids,
+    uint256[] memory values,
+    bytes memory data
+  ) public override returns (bytes4) {
+    require(operator == address(this), "Only the Adventurer contract can pull items in");
+    return super.onERC1155BatchReceived(operator, from, ids, values, data);
   }
 
   function _beforeChild721Transfer(
