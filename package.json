@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "description": "Unbundle your Loot into individual components.",
   "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "chai": "^4.3.4",
     "copyfiles": "^2.4.1",
     "ethereum-waffle": "^3.4.0",
