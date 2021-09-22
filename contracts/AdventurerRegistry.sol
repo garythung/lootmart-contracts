@@ -15,15 +15,6 @@ contract AdventurerRegistry is Ownable {
   using EnumerableSet for EnumerableSet.UintSet;
   using ERC165Checker for address;
 
-  uint256 internal constant WEAPON = 0x0;
-  uint256 internal constant CHEST = 0x1;
-  uint256 internal constant HEAD = 0x2;
-  uint256 internal constant WAIST = 0x3;
-  uint256 internal constant FOOT = 0x4;
-  uint256 internal constant HAND = 0x5;
-  uint256 internal constant NECK = 0x6;
-  uint256 internal constant RING = 0x7;
-
   EnumerableSet.AddressSet allowed721Contracts;
   EnumerableSet.AddressSet allowed1155Contracts;
 

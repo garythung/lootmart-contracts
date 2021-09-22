@@ -8,7 +8,7 @@ Mint your components by calling `claimForLoot(uint256 tokenId)`, `claimAllForOwn
 
 ## Adventurer
 
-The Adventurer is a composable NFT inspired by the [ERC-998](https://eips.ethereum.org/EIPS/eip-998) standard. There is an AdventurerRegistry paired with the Adventurer that specifies which 721 and 1155 contracts are valid to equip the Adventurer with, as well as valid item slots.
+The Adventurer is a composable NFT inspired by the [ERC-998](https://eips.ethereum.org/EIPS/eip-998) standard. There is an AdventurerRegistry paired with the Adventurer that specifies which 721 and 1155 contracts are valid to equip the Adventurer with, as well as valid item types.
 
 To equip items, you must approve the Adventurer contract to transfer your items for that contract. Then, call `equip` with the item details. `equip` will unequip the existing item in the slot and send it back to you if there is one, and then equip the new one.
 

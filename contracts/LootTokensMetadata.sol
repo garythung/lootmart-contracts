@@ -101,10 +101,10 @@ contract LootTokensMetadata is ILootmart, LootComponents {
         (uint256[5] memory components, uint256 itemType) = TokenId.fromId(id);
         // should we also use components[0] which contains the item name?
         string memory slot = itemTypes[itemType];
-        string memory res = string(abi.encodePacked('[', trait("Slot", slot)));
+        string memory res = string(abi.encodePacked('[', trait("Item Type", slot)));
 
         string memory item = itemName(itemType, components[0]);
-        res = string(abi.encodePacked(res, ", ", trait("Item", item)));
+        res = string(abi.encodePacked(res, ", ", trait("Name", item)));
 
         if (components[1] > 0) {
             string memory data = suffixes[components[1] - 1];
