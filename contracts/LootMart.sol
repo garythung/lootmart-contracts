@@ -7,7 +7,6 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LootTokensMetadata.sol";
 
@@ -34,7 +33,7 @@ library Errors {
 /// @author Gary Thung, forked from Georgios Konstantopoulos
 /// @notice Allows "opening" your ERC721 Loot bags and extracting the items inside it
 /// The created tokens are ERC1155 compatible, and their on-chain SVG is their name
-contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
+contract Lootmart is Ownable, ERC1155, LootTokensMetadata {
     // The OG Loot bags contract
     IERC721Enumerable immutable loot;
 
@@ -185,9 +184,5 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
     function toBytes(uint256 x) internal pure returns (bytes memory b) {
         b = new bytes(32);
         assembly { mstore(add(b, 32), x) }
-    }
-
-    function onERC721Received(address, address, uint256, bytes calldata) external override returns (bytes4) {
-        return this.onERC721Received.selector;
     }
 }
