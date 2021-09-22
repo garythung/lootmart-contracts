@@ -41,7 +41,7 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable {
 
   IRegistry internal registry;
 
-  constructor(address _registry) ERC998TopDown("Adventurer", "ADVT") {
+  constructor(address _registry) ERC998TopDown("Adventurers (for Loot)", "ADVT") {
     registry = IRegistry(_registry);
   }
 
