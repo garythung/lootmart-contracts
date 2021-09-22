@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./LootTokensMetadata.sol";
+import "./LootmartId.sol";
 
 interface ILootAirdrop {
     function claimForLoot(uint256) external payable;
@@ -67,7 +68,7 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata {
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
         return
-            interfaceId == 0xeea73b1a ||
+            interfaceId == LootmartId.INTERFACE_ID ||
             super.supportsInterface(interfaceId);
     }
 

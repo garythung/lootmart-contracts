@@ -58,12 +58,12 @@ contract AdventurerRegistry is Ownable {
   }
 
   function add721Contract(address _contract) external onlyOwner {
-    require(_contract.supportsInterface(LootmartId.LOOT_MART_INTERFACE_ID), "Must implement Lootmart interface");
+    require(_contract.supportsInterface(LootmartId.INTERFACE_ID), "Must implement Lootmart interface");
     allowed721Contracts.add(_contract);
   }
 
   function add1155Contract(address _contract) external onlyOwner {
-    require(_contract.supportsInterface(LootmartId.LOOT_MART_INTERFACE_ID), "Must implement Lootmart interface");
+    require(_contract.supportsInterface(LootmartId.INTERFACE_ID), "Must implement Lootmart interface");
     allowed1155Contracts.add(_contract);
   }
 
