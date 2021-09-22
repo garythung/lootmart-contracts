@@ -3,9 +3,7 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./LootmartId.sol";
@@ -75,6 +73,10 @@ contract AdventurerRegistry is Ownable {
 
   function remove1155Contract(address _contract) external onlyOwner {
     allowed1155Contracts.remove(_contract);
+  }
+
+  function allItemTypes() external view returns (string[] memory) {
+    return itemTypesArray;
   }
 
   function isValidItemType(string memory _itemType) external view returns (bool) {

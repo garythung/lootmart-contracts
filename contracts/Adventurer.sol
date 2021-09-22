@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import {Base64, toString} from "./MetadataUtils.sol";
 import "./ERC998TopDown.sol";
 import "./ILootmart.sol";
 
@@ -16,6 +17,7 @@ interface IRegistry {
   function isValid1155Contract(address _contract) external view returns (bool);
   function isValidContract(address _contract) external view returns (bool);
   function isValidItemType(string memory _itemType) external view returns (bool);
+  function allItemTypes() external view returns (string[] memory);
 }
 
 /// @title Adventurer
@@ -236,6 +238,76 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable {
     emit Unequipped(_tokenId, currentItemAddress, currentItemId, _itemType);
   }
 
+  function tokenURI(uint256 _tokenId) override public view returns (string memory) {
+    string[] memory allItemTypes = registry.allItemTypes();
+    string memory image = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" />';
+    uint8 yIndex = 20;
+
+    for (uint8 i = 0; i < allItemTypes.length; i++) {
+      string memory itemType = allItemTypes[i];
+      Item memory item = equipped[_tokenId][itemType];
+      if (item.itemAddress != address(0)) {
+        string memory name = ILootmart(item.itemAddress).nameFor(item.id);
+        image = string(abi.encodePacked(image, '<text x="10" y="', toString(yIndex), '" class="base">', name, '</text>'));
+      } else {
+        image = string(abi.encodePacked(image, '<text x="10" y="', toString(yIndex), '" class="base">-</text>'));
+      }
+      yIndex += 20;
+    }
+
+    image = string(abi.encodePacked(image, '</svg>'));
+
+    string memory json = Base64.encode(
+      bytes(
+        string(
+          abi.encodePacked(
+            '{',
+            '"name": "Adventurer #', toString(_tokenId),'", ',
+            '"description": "Adventurers can be equipped and upgraded with various Lootmart items. Different combinations of items unlock special abilities and powers for your Adventurer.", ',
+            '"image": ', '"data:image/svg+xml;base64,', Base64.encode(bytes(image)), '", '
+            '"attributes": ', attributes(_tokenId),
+            '}'
+          )
+        )
+      )
+    );
+
+    return string(abi.encodePacked('data:application/json;base64,', json));
+  }
+
+  // Helper for encoding as json w/ trait_type / value from opensea
+  function trait(string memory _traitType, string memory _value) internal pure returns (string memory) {
+      return string(abi.encodePacked(
+        '{',
+        '"trait_type": "', _traitType, '", ',
+        '"value": "', _value, '"',
+        '}'
+      ));
+    }
+
+  /// @notice Returns the attributes associated with this item.
+  /// @dev Opensea Standards: https://docs.opensea.io/docs/metadata-standards
+  function attributes(uint256 _tokenId) public view returns (string memory) {
+    string memory res = "[";
+    string[] memory allItemTypes = registry.allItemTypes();
+    bool first = true;
+    for (uint8 i = 0; i < allItemTypes.length; i++) {
+      string memory itemType = allItemTypes[i];
+      Item memory item = equipped[_tokenId][itemType];
+      if (item.itemAddress != address(0)) {
+        string memory name = ILootmart(item.itemAddress).nameFor(item.id);
+        if (first) {
+          res = string(abi.encodePacked(res, trait(itemType, name)));
+          first = false;
+        } else {
+          res = string(abi.encodePacked(res, ', ', trait(itemType, name)));
+        }
+      }
+    }
+
+    return string(abi.encodePacked(res, ']'));
+  }
+
   // CALLBACKS //
 
   /**
@@ -319,4 +391,5 @@ contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable {
     b = new bytes(32);
     assembly { mstore(add(b, 32), x) }
   }
+
 }

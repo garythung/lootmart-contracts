@@ -7,4 +7,5 @@ pragma experimental ABIEncoderV2;
 // type of item it is
 interface ILootmart {
   function itemTypeFor(uint256 tokenId) external view returns (string memory);
+  function nameFor(uint256 tokenId) external view returns (string memory);
 }

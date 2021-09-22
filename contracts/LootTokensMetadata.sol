@@ -46,14 +46,14 @@ contract LootTokensMetadata is ILootmart, LootComponents {
     uint256 internal constant RING = 0x7;
 
     string[] internal itemTypes = [
-        "Weapon",
-        "Chest",
-        "Head",
-        "Waist",
-        "Foot",
-        "Hand",
-        "Neck",
-        "Ring"
+        "weapon",
+        "chest",
+        "head",
+        "waist",
+        "foot",
+        "hand",
+        "neck",
+        "ring"
     ];
 
     string public baseURI;
@@ -80,8 +80,9 @@ contract LootTokensMetadata is ILootmart, LootComponents {
             bytes(
                 string(
                     abi.encodePacked(
-                        '{ "name": "', tokenName(tokenId),'", ',
-                        '"description": ', '"Lootmart turns your Loot into individual items that you can trade and use to explore the Loot universe.", ',
+                        '{',
+                        '"name": "', nameFor(tokenId),'", ',
+                        '"description": "', nameFor(tokenId), '\\n\\n', 'Lootmart items are individual Loot items that you can trade and use to upgrade your Adventurer. Different combinations of Loot items unlock special abilities and powers.", ',
                         '"image": ', '"', baseURI, '/', toString(tokenId), '.png", ',
                         '"attributes": ', attributes(tokenId),
                         '}'
@@ -151,11 +152,11 @@ contract LootTokensMetadata is ILootmart, LootComponents {
             '"trait_type": "', _traitType, '", ',
             '"value": "', _value, '"',
         '}'));
-      }
+    }
 
-    // @notice Given an ERC1155 token id, it returns its name by decoding and parsing
-    // the id
-    function tokenName(uint256 id) public view returns (string memory) {
+    /// @notice Given an ERC1155 token id, it returns its name by decoding and parsing
+    /// the id
+    function nameFor(uint256 id) public override view returns (string memory) {
         (uint256[5] memory components, uint256 itemType) = TokenId.fromId(id);
         return componentsToString(components, itemType);
     }
@@ -292,14 +293,14 @@ contract LootTokensMetadata is ILootmart, LootComponents {
         ItemIds memory items = ids(tokenId);
         return
             ItemNames({
-                weapon: tokenName(items.weapon),
-                chest: tokenName(items.chest),
-                head: tokenName(items.head),
-                waist: tokenName(items.waist),
-                foot: tokenName(items.foot),
-                hand: tokenName(items.hand),
-                neck: tokenName(items.neck),
-                ring: tokenName(items.ring)
+                weapon: nameFor(items.weapon),
+                chest: nameFor(items.chest),
+                head: nameFor(items.head),
+                waist: nameFor(items.waist),
+                foot: nameFor(items.foot),
+                hand: nameFor(items.hand),
+                neck: nameFor(items.neck),
+                ring: nameFor(items.ring)
             });
     }
 

@@ -6,13 +6,6 @@
 const hre = require("hardhat");
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
-
   // Deploy Loot
   const Loot = await hre.ethers.getContractFactory("Loot");
   const loot = await Loot.deploy();
@@ -47,24 +40,6 @@ async function main() {
 
   // Add lootmart to registry
   await registry.add1155Contract(lootmart.address);
-
-  await loot.claim("1");
-  await loot.claim("2");
-  await lootmart.claimForLootWithAdventurer("1");
-  await lootmart.setApprovalForAll(adventurer.address, true);
-  const ids = await lootmart.ids("1");
-  // for (let i = 0; i < ids.length; i++) {
-  //   const id = ids[i];
-  //   if (id % 2 === 0) {
-  //     continue;
-  //   }
-  //   await adventurer.equip("0", lootmart.address, id);
-  // }
-  // await adventurer.equip("0", lootmart.address, ids[3]);
-  // await adventurer.equip("0", lootmart.address, ids[4]);
-  // await adventurer.equip("0", lootmart.address, ids[7]);
-  console.log(await adventurer.tokenURI("0"));
-  console.log(await lootmart.tokenURI(ids[0]));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
