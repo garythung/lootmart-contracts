@@ -10,6 +10,9 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./LootmartId.sol";
 
+/// @title AdventurerRegistry
+/// @author Gary Thung
+/// @notice AdventurerRegistry is a registry defining permissions for the Adventurer
 contract AdventurerRegistry is Ownable {
   using EnumerableSet for EnumerableSet.AddressSet;
   using EnumerableSet for EnumerableSet.UintSet;
@@ -56,10 +59,6 @@ contract AdventurerRegistry is Ownable {
     itemTypesArray.pop();
   }
 
-  function isValidItemType(string memory _itemType) external view returns (bool) {
-    return itemTypes[_itemType];
-  }
-
   function add721Contract(address _contract) external onlyOwner {
     require(_contract.supportsInterface(LootmartId.LOOT_MART_INTERFACE_ID), "Must implement Lootmart interface");
     allowed721Contracts.add(_contract);
@@ -76,6 +75,10 @@ contract AdventurerRegistry is Ownable {
 
   function remove1155Contract(address _contract) external onlyOwner {
     allowed1155Contracts.remove(_contract);
+  }
+
+  function isValidItemType(string memory _itemType) external view returns (bool) {
+    return itemTypes[_itemType];
   }
 
   function isValidContract(address _contract) external view returns (bool) {

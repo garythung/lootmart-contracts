@@ -31,6 +31,10 @@ module.exports = {
       url: process.env.ALCHEMY_RINKEBY_URL,
       accounts: [`0x${process.env.RINKEBY_PRIVATE_KEY}`],
     },
+    mainnet: {
+      url: process.env.ALCHEMY_MAINNET_URL,
+      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+    },
   },
   etherscan: {
     // Your API key for Etherscan

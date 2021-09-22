@@ -18,6 +18,9 @@ interface IRegistry {
   function isValidItemType(string memory _itemType) external view returns (bool);
 }
 
+/// @title Adventurer
+/// @author Gary Thung
+/// @notice Adventurer is a composable NFT designed to equip other ERC721 and ERC1155 tokens
 contract Adventurer is ERC721Enumerable, ERC998TopDown, Ownable {
   using ERC165Checker for address;
 
