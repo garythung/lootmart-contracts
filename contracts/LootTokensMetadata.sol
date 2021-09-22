@@ -74,15 +74,6 @@ contract LootTokensMetadata is ILootmart, LootComponents {
         baseURI = _newBaseURI;
     }
 
-    /// @dev Opensea contract metadata: https://docs.opensea.io/docs/contract-level-metadata
-    function contractURI() external pure returns (string memory) {
-      string memory json = '{"name": "Lootmart", "description": "Lootmart lets you unbundle your Loot Bags into individual ERC1155 NFTs or rebundle items into their original Loot Bags."}';
-      string memory encodedJson = Base64.encode(bytes(json));
-      string memory output = string(abi.encodePacked('data:application/json;base64,', encodedJson));
-
-      return output;
-    }
-
     /// @notice Returns an SVG for the provided token id
     function tokenURI(uint256 tokenId) public view returns (string memory) {
         string memory json = Base64.encode(
@@ -90,7 +81,7 @@ contract LootTokensMetadata is ILootmart, LootComponents {
                 string(
                     abi.encodePacked(
                         '{ "name": "', tokenName(tokenId),'", ',
-                        '"description": ', '"Lootmart breaks down your Loot into components that you can trade and use to explore the Loot universe.", ',
+                        '"description": ', '"Lootmart turns your Loot into individual items that you can trade and use to explore the Loot universe.", ',
                         '"image": ', '"', baseURI, '/', toString(tokenId), '.png", ',
                         '"attributes": ', attributes(tokenId),
                         '}'
