@@ -64,10 +64,6 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
     constructor(address _loot, address _adventurer, string memory _baseURI) ERC1155("") LootTokensMetadata(_baseURI) {
         loot = IERC721Enumerable(_loot);
         adventurer = IAdventurer(_adventurer);
-
-        // Patched OZ to allow for this
-        _operatorApprovals[address(this)][_adventurer] = true;
-        emit ApprovalForAll(address(this), _adventurer, true);
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
@@ -78,7 +74,7 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
 
     /// @notice Claims the components for the given tokenId
     function claimForLoot(uint256 tokenId) external {
-        _claim(tokenId, _msgSender(), false);
+        _claim(tokenId, _msgSender());
     }
 
     /// @notice Claims all components for caller
@@ -90,20 +86,21 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
 
         // i < tokenBalanceOwner because tokenBalanceOwner is 1-indexed
         for (uint256 i = 0; i < tokenBalanceOwner; i++) {
-            _claim(loot.tokenOfOwnerByIndex(_msgSender(), i), _msgSender(), false);
+            _claim(loot.tokenOfOwnerByIndex(_msgSender(), i), _msgSender());
         }
     }
 
     /// @notice Claims all components for given IDs
     function claimForTokenIds(uint256[] memory tokenIds) external {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _claim(tokenIds[i], _msgSender(), false);
+            _claim(tokenIds[i], _msgSender());
         }
     }
 
     /// @notice Claims the components for the given tokenId and mints an adventurer
     function claimForLootWithAdventurer(uint256 tokenId) external {
-        _claim(tokenId, _msgSender(), true);
+        _claim(tokenId, _msgSender());
+        adventurer.mintToAccount(_msgSender());
     }
 
     /// @notice Claims all components for caller and mints an adventurer
@@ -115,19 +112,23 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
 
         // i < tokenBalanceOwner because tokenBalanceOwner is 1-indexed
         for (uint256 i = 0; i < tokenBalanceOwner; i++) {
-            _claim(loot.tokenOfOwnerByIndex(_msgSender(), i), _msgSender(), true);
+            _claim(loot.tokenOfOwnerByIndex(_msgSender(), i), _msgSender());
         }
+
+        adventurer.mintToAccount(_msgSender());
     }
 
     /// @notice Claims all components for given IDs and mints an adventurer
     function claimForTokenIdsWithAdventurer(uint256[] memory tokenIds) external {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            _claim(tokenIds[i], _msgSender(), true);
+            _claim(tokenIds[i], _msgSender());
         }
+
+        adventurer.mintToAccount(_msgSender());
     }
 
     /// @notice Claim all components for a loot bag. Performs safety checks
-    function _claim(uint256 tokenId, address tokenOwner, bool withAdventurer) internal {
+    function _claim(uint256 tokenId, address tokenOwner) internal {
         // Check that caller owns the loot bag
         require(tokenOwner == loot.ownerOf(tokenId), "MUST_OWN_TOKEN_ID");
 
@@ -154,43 +155,15 @@ contract Lootmart is Ownable, ERC1155, LootTokensMetadata, IERC721Receiver {
         ids[5] = itemId(tokenId, handComponents, HAND);
         ids[6] = itemId(tokenId, neckComponents, NECK);
         ids[7] = itemId(tokenId, ringComponents, RING);
-        amounts[0] = 1;
-        amounts[1] = 1;
-        amounts[2] = 1;
-        amounts[3] = 1;
-        amounts[4] = 1;
-        amounts[5] = 1;
-        amounts[6] = 1;
-        amounts[7] = 1;
 
-        _mintItems(ids, tokenOwner, withAdventurer);
+        for (uint256 i = 0; i < ids.length; i++) {
+            amounts[i] = 1;
+
+            // +21k per call / unavoidable - requires patching OZ
+            _balances[ids[i]][tokenOwner] += 1;
+        }
 
         emit TransferBatch(_msgSender(), address(0), tokenOwner, ids, amounts);
-    }
-
-    /// @notice Mints the individual items. Can mint to a new Adventurer.
-    function _mintItems(uint256[] memory _ids, address _tokenOwner, bool _withAdventurer) internal {
-        if (_withAdventurer) {
-            // Mint an adventurer to Lootmart
-            uint256 adventurerId = adventurer.totalSupply();
-            adventurer.mint();
-
-            // Mint and equip the adventurer with the items
-            for (uint256 i = 0; i < _ids.length; i++) {
-                // +21k per call / unavoidable - requires patching OZ
-                // mint to this contract
-                _balances[_ids[i]][address(this)] += 1;
-                adventurer.equip(adventurerId, address(this), _ids[i]);
-            }
-
-            // Transfer adventurer from Lootmart to claimer
-            adventurer.safeTransferFrom(address(this), _tokenOwner, adventurerId);
-        } else {
-            for (uint256 i = 0; i < _ids.length; i++) {
-                // +21k per call / unavoidable - requires patching OZ
-                _balances[_ids[i]][_tokenOwner] += 1;
-            }
-        }
     }
 
     function itemId(

@@ -87,38 +87,49 @@ describe("Lootmart", function () {
     const lootId = "123";
     await loot.claim(lootId);
 
-    // Lootmart balances for Adventurer contract before claim
+    const adventurerBalanceBefore = await adventurer.balanceOf(owner.address);
+
+    // Lootmart balances for owner account before claim
     const balancesBefore = {};
     const ids = await lootMart.ids(lootId);
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      balancesBefore[id] = await lootMart.balanceOf(adventurer.address, id);
+      balancesBefore[id] = await lootMart.balanceOf(owner.address, id);
     }
 
-    // Adventurer balances for Adventurer contract
-    const adventurerBalanceBefore = await adventurer.balanceOf(owner.address);
+    // Lootmart balances for owner account after claim
     await lootMart.claimForLootWithAdventurer(lootId);
-    expect(await adventurer.balanceOf(owner.address)).to.equal(
-      adventurerBalanceBefore.add(1)
-    );
-
-    // Lootmart balances for Adventurer contract after claim
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      expect(await lootMart.balanceOf(adventurer.address, id)).to.equal(
+      expect(await lootMart.balanceOf(owner.address, id)).to.equal(
         balancesBefore[id].add(1)
       );
     }
 
     // Check that Lootmart has been claimed
     expect(await lootMart.claimedByTokenId(lootId)).to.equal(true);
+
+    // Check that owner owns Adventurer
+    expect(await adventurer.balanceOf(owner.address)).to.equal(
+      adventurerBalanceBefore.add(1)
+    );
   });
 
   it("Should not be able to equip unregistered contracts", async function () {
     const lootId = "3";
     await loot.claim(lootId);
+    await lootMart.claimForLootWithAdventurer(lootId);
+    const ids = await lootMart.ids(lootId);
+
+    const tokenBalance = await adventurer.balanceOf(owner.address);
+    const tokenId = await adventurer.tokenOfOwnerByIndex(
+      owner.address,
+      tokenBalance - 1
+    );
+
     await registry.remove1155Contract(lootMart.address);
-    await expect(lootMart.claimForLootWithAdventurer(lootId)).to.be.reverted;
+    await expect(adventurer.equip(tokenId, lootMart.address, ids[0])).to.be
+      .reverted;
     await registry.add1155Contract(lootMart.address);
   });
 
@@ -162,17 +173,6 @@ describe("Lootmart", function () {
         Math.floor(Math.random() * lootMartIdsStandalone.length)
       ];
     const itemType = await lootMart.itemTypeFor(idToEquip);
-    const oldItem = await adventurer.equipped(tokenId, itemType);
-
-    // get balances of old item
-    const oldItemPrevBalanceAdventurer = await lootMart.balanceOf(
-      adventurer.address,
-      oldItem.id
-    );
-    const oldItemPrevBalanceOwner = await lootMart.balanceOf(
-      owner.address,
-      oldItem.id
-    );
 
     // get balances of new item
     const newItemPrevBalanceAdventurer = await lootMart.balanceOf(
@@ -191,15 +191,6 @@ describe("Lootmart", function () {
     expect(newItem.itemAddress).to.equal(lootMart.address);
     expect(newItem.id).to.equal(idToEquip);
 
-    // Adventurer has 1 less of old item
-    expect(await lootMart.balanceOf(adventurer.address, oldItem.id)).to.equal(
-      oldItemPrevBalanceAdventurer.sub(1)
-    );
-    // Owner has 1 more of old item
-    expect(await lootMart.balanceOf(owner.address, oldItem.id)).to.equal(
-      oldItemPrevBalanceOwner.add(1)
-    );
-
     // Adventurer has 1 more of new item
     expect(await lootMart.balanceOf(adventurer.address, newItem.id)).to.equal(
       newItemPrevBalanceAdventurer.add(1)
@@ -215,6 +206,12 @@ describe("Lootmart", function () {
     await loot.claim(lootId);
     await lootMart.claimForLootWithAdventurer(lootId);
 
+    const lootMartIdsStandalone = await lootMart.ids(lootId);
+    const idToEquip =
+      lootMartIdsStandalone[
+        Math.floor(Math.random() * lootMartIdsStandalone.length)
+      ];
+
     // get token id
     const tokenBalance = await adventurer.balanceOf(owner.address);
     const tokenId = await adventurer.tokenOfOwnerByIndex(
@@ -222,34 +219,35 @@ describe("Lootmart", function () {
       tokenBalance - 1
     );
 
-    const itemTypeToUnequip =
-      ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
-    const oldItem = await adventurer.equipped(tokenId, itemTypeToUnequip);
+    // equip item
+    await adventurer.equip(tokenId, lootMart.address, idToEquip);
+    const itemType = await lootMart.itemTypeFor(idToEquip);
+    const current = await adventurer.equipped(tokenId, itemType);
 
     // get balances of old item
     const oldItemPrevBalanceAdventurer = await lootMart.balanceOf(
       adventurer.address,
-      oldItem.id
+      current.id
     );
     const oldItemPrevBalanceOwner = await lootMart.balanceOf(
       owner.address,
-      oldItem.id
+      current.id
     );
 
     // Equip item
-    await adventurer.unequip(tokenId, itemTypeToUnequip);
+    await adventurer.unequip(tokenId, itemType);
 
     // Adventurer has 1 less of old item
-    expect(await lootMart.balanceOf(adventurer.address, oldItem.id)).to.equal(
+    expect(await lootMart.balanceOf(adventurer.address, current.id)).to.equal(
       oldItemPrevBalanceAdventurer.sub(1)
     );
     // Owner has 1 more of old item
-    expect(await lootMart.balanceOf(owner.address, oldItem.id)).to.equal(
+    expect(await lootMart.balanceOf(owner.address, current.id)).to.equal(
       oldItemPrevBalanceOwner.add(1)
     );
 
     // Item slot no longer equipped
-    const nullItem = await adventurer.equipped(tokenId, itemTypeToUnequip);
+    const nullItem = await adventurer.equipped(tokenId, itemType);
     expect(nullItem.itemAddress).to.equal(ethers.constants.AddressZero);
     expect(nullItem.id).to.equal(0);
   });
